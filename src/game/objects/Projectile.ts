@@ -2,19 +2,30 @@ import Phaser from 'phaser';
 
 export default class Projectile extends Phaser.Physics.Arcade.Sprite {
   constructor(scene: Phaser.Scene, x: number, y: number) {
-    super(scene, x, y, '');
+    super(scene, x, y, 'projectile');
 
-    scene.add.existing(this);
-    scene.physics.add.existing(this);
-
-    // Create projectile shape
+    // Create a small circle texture for the projectile
     const graphics = scene.add.graphics();
-    graphics.fillStyle(0xffff00);
-    graphics.fillRect(0, 0, 4, 10);
-    graphics.generateTexture('projectile', 4, 10);
+    graphics.fillStyle(0xff0000, 1); // Red color
+    graphics.fillCircle(5, 5, 5); // Radius: 5
+    graphics.generateTexture('projectile', 10, 10);
     graphics.destroy();
 
     this.setTexture('projectile');
-    this.setVelocityY(-300);
+
+    // Initialize physics body
+    scene.physics.add.existing(this);
+    this.body.setSize(10, 10); // Match the texture size
+
+    // Set initial velocity (will be updated when fired)
+    this.setVelocity(0, 0);
+  }
+
+  // Method to fire the projectile in a given direction
+  fire(x: number, y: number) {
+    this.setActive(true);
+    this.setVisible(true);
+    this.setPosition(x, y);
+    this.setVelocity(0, -300); // Move upward
   }
 }

@@ -1,32 +1,37 @@
 import Phaser from 'phaser';
 
 export default class Asteroid extends Phaser.Physics.Arcade.Sprite {
-  size: number;
-  points: number;
+  private radius: number;
 
-  constructor(scene: Phaser.Scene, x: number, y: number, size: number = 1) {
-    super(scene, x, y, '');
+  constructor(scene: Phaser.Scene, x: number, y: number) {
+    // Randomly select a frame from the atlas
+    super(scene, x, y, 'asteroids'); // Use the loaded texture key
+    // Scale the texture to half size
+    this.setScale(0.1);
 
-    scene.add.existing(this);
+    this.radius = Phaser.Math.Between(10, 40);
+
+    // Initialize physics body
     scene.physics.add.existing(this);
+    this.body.setCircle(this.radius);
 
-    this.size = size;
-    this.points = size * 10; // small: 10, medium: 20, large: 30? Wait, spec says small 10, medium 20, large 50
+    // Set initial velocity
+    this.setVelocityY(100); // Adjust speed as needed
+  }
 
-    // Adjust points
-    if (size === 1) this.points = 10;
-    else if (size === 2) this.points = 20;
-    else if (size === 3) this.points = 50;
+  // Method to handle damage
+  takeDamage() {
+    this.health--;
+    if (this.health <= 0) {
+      this.explode();
+    }
+  }
 
-    // Create asteroid shape
-    const radius = 10 * size;
-    const graphics = scene.add.graphics();
-    graphics.fillStyle(0x888888);
-    graphics.fillCircle(radius, radius, radius);
-    graphics.generateTexture(`asteroid${size}`, radius * 2, radius * 2);
-    graphics.destroy();
+  private explode() {
+    // Destroy the asteroid
+    this.destroy();
 
-    this.setTexture(`asteroid${size}`);
-    this.setVelocityY(50 + Math.random() * 100); // random speed
+    // Spawn smaller asteroid particles (optional implementation)
+    // ...
   }
 }
