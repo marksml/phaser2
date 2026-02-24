@@ -24,10 +24,15 @@ export default class GameScene extends Phaser.Scene {
     this.load.image('asteroids', 'assets/a.png'); // Replace with your texture atlas path
 
     this.load.image('projectile', 'assets/explosions/images/rocket_flame/rocket_1_0000.png'); // Replace with your projectile texture path
+
+    this.load.image('background', 'assets/background/bg5.jpg'); // Replace with your background texture path
   }
 
   create() {
-    this.cameras.main.setBackgroundColor('#000000'); // Black background
+    // Add the background image and scale it to fit the screen
+    const background = this.add.image(0, 0, 'background').setOrigin(0, 0);
+    background.displayWidth = this.cameras.main.width;
+    background.displayHeight = this.cameras.main.height;
 
     // Create a physics group for asteroids
     this.asteroids = this.physics.add.group();
