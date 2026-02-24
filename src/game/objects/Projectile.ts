@@ -26,6 +26,6 @@ export default class Projectile extends Phaser.Physics.Arcade.Sprite {
     this.setActive(true);
     this.setVisible(true);
     this.setPosition(x, y);
-    this.setVelocity(0, -300); // Move upward
+    this.setVelocity(0, -500); // Move upward
   }
 }

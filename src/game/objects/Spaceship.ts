@@ -17,12 +17,12 @@ export default class Spaceship extends Phaser.Physics.Arcade.Sprite {
 
   // Method to move the spaceship left
   moveLeft() {
-    this.setVelocityX(-200); // Adjust speed as needed
+    this.setVelocityX(-300); // Adjust speed as needed
   }
 
   // Method to move the spaceship right
   moveRight() {
-    this.setVelocityX(200); // Adjust speed as needed
+    this.setVelocityX(300); // Adjust speed as needed
   }
 
   // Method to stop the spaceship

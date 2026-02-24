@@ -1,21 +1,20 @@
 import Phaser from 'phaser';
 
 export default class Asteroid extends Phaser.Physics.Arcade.Sprite {
-  private radius: number;
-  private health: number = 3; // Initialize health here
+  private scale: number;
+  private health: number = 10; // Initialize health here
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
     // Randomly select a frame from the atlas
     super(scene, x, y, 'asteroids'); // Use the loaded texture key
     // Scale the texture to half size
-    this.setScale(0.1);
-
-    this.radius = Phaser.Math.Between(10, 40);
+    
+    this.scale = Phaser.Math.Between(1, 4)/10; // Random scale between 0.1 and 0.4
+    this.setScale(this.scale);
 
     // Initialize physics body
     scene.physics.add.existing(this);
-    this.body.setCircle(this.radius);
-
+    
     // Set initial velocity
     this.setVelocityY(100); // Adjust speed as needed
   }

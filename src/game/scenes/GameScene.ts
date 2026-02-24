@@ -17,7 +17,8 @@ export default class GameScene extends Phaser.Scene {
 
   preload() {
     // Load the spaceship texture
-    this.load.image('spaceship', 'assets/spaceship.png'); // Replace with your texture path
+    //this.load.image('spaceship', 'assets/spaceship.png'); // Replace with your texture path
+    this.load.image('spaceship', 'assets/spaceships/10.png'); // Replace with your texture path
 
     // Load the asteroid texture atlas
     this.load.image('asteroids', 'assets/a.png'); // Replace with your texture atlas path
@@ -91,17 +92,17 @@ export default class GameScene extends Phaser.Scene {
   update(time: number, delta: number) {
     // Handle spaceship movement based on cursor keys
     if (this.cursors.left.isDown) {
-      this.spaceship.setVelocityX(-200);
+      this.spaceship.setVelocityX(-300);
     } else if (this.cursors.right.isDown) {
-      this.spaceship.setVelocityX(200);
+      this.spaceship.setVelocityX(300);
     } else {
       this.spaceship.setVelocityX(0);
     }
 
     if (this.cursors.up.isDown) {
-      this.spaceship.setVelocityY(-200);
+      this.spaceship.setVelocityY(-300);
     } else if (this.cursors.down.isDown) {
-      this.spaceship.setVelocityY(200);
+      this.spaceship.setVelocityY(300);
     } else {
       this.spaceship.setVelocityY(0);
     }
@@ -127,12 +128,23 @@ export default class GameScene extends Phaser.Scene {
     // Add a cooldown to control firing rate
     const firingRate = 100; // milliseconds
     if (this.time.now > this.lastFired + firingRate) {
-      const projectileX = this.spaceship.x;
-      const projectileY = this.spaceship.y - 20; // Spawn from the top of the spaceship
-      const projectile = new Projectile(this, projectileX, projectileY);
-      this.projectiles.add(projectile);
-      this.add.existing(projectile); // Add projectile to the scene
-      projectile.fire(projectileX, projectileY);
+      
+      const projectile1X = this.spaceship.x - 26; // Spawn slightly to the left of the spaceship
+      const projectile1Y = this.spaceship.y - 20; // Spawn from the top of the spaceship
+      const projectile1 = new Projectile(this, projectile1X, projectile1Y);
+      
+      const projectile2X = this.spaceship.x + 26; // Spawn slightly to the right of the spaceship
+      const projectile2Y = this.spaceship.y - 20; // Spawn from the top of the spaceship
+      const projectile2 = new Projectile(this, projectile2X, projectile2Y);
+      
+      this.projectiles.add(projectile1);
+      this.add.existing(projectile1); // Add projectile to the scene
+      projectile1.fire(projectile1X, projectile1Y);
+
+      this.projectiles.add(projectile2);
+      this.add.existing(projectile2); // Add projectile to the scene
+      projectile2.fire(projectile2X, projectile2Y);
+      
       this.lastFired = this.time.now;
     }
   }
