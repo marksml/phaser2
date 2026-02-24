@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 
 export default class Asteroid extends Phaser.Physics.Arcade.Sprite {
   private radius: number;
+  private health: number = 3; // Initialize health here
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
     // Randomly select a frame from the atlas
@@ -22,16 +23,22 @@ export default class Asteroid extends Phaser.Physics.Arcade.Sprite {
   // Method to handle damage
   takeDamage() {
     this.health--;
+    console.log(`Asteroid health: ${this.health}`);
     if (this.health <= 0) {
       this.explode();
     }
   }
 
   private explode() {
-    // Destroy the asteroid
-    this.destroy();
+    // Disable the physics body
+    if (this.body) {
+      this.body.enable = false;
+    }
 
-    // Spawn smaller asteroid particles (optional implementation)
-    // ...
+    
+    // Remove the asteroid
+    this.setActive(false);
+    this.setVisible(false);
+    this.destroy();
   }
 }

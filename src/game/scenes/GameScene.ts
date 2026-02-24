@@ -70,8 +70,20 @@ export default class GameScene extends Phaser.Scene {
   }
 
   private handleProjectileAsteroidCollision(projectile: Projectile, asteroid: Asteroid) {
+    // Debugging: Log collision detection
+    console.log('Collision detected between projectile and asteroid!');
+
     projectile.destroy(); // Destroy the projectile
     asteroid.takeDamage(); // Apply damage to the asteroid
+
+     // Optional: Add a visual effect (e.g., flash the asteroid)
+    this.tweens.add({
+      targets: asteroid,
+      alpha: 0.5,
+      duration: 100,
+      yoyo: true,
+      repeat: 1,
+    });
   }
 
   update(time: number, delta: number) {
