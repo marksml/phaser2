@@ -21,6 +21,8 @@ export default class GameScene extends Phaser.Scene {
 
     // Load the asteroid texture atlas
     this.load.image('asteroids', 'assets/a.png'); // Replace with your texture atlas path
+
+    this.load.image('projectile', 'assets/explosions/images/rocket_flame/rocket_1_0000.png'); // Replace with your projectile texture path
   }
 
   create() {
