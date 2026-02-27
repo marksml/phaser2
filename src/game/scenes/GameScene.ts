@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import Asteroid from '../objects/Asteroid';
 import Spaceship from '../objects/Spaceship';
 import Projectile from '../objects/Projectile';
+import ScoreSystem from '../systems/ScoreSystem';
 
 export default class GameScene extends Phaser.Scene {
   private asteroids!: Phaser.Physics.Arcade.Group;
@@ -10,6 +11,7 @@ export default class GameScene extends Phaser.Scene {
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
   private spacebar!: Phaser.Input.Keyboard.Key;
   private lastFired = 0; // Add a private property to track the last firing time
+  private scoreSystem!: ScoreSystem;
 
   constructor() {
     super('GameScene');
@@ -39,6 +41,10 @@ export default class GameScene extends Phaser.Scene {
 
     // Create a physics group for projectiles
     this.projectiles = this.physics.add.group();
+
+    // Initialize the score system
+    this.scoreSystem = new ScoreSystem(this);
+    this.scoreSystem.reset();
 
     // Spawn an initial asteroid
     this.spawnAsteroid();
@@ -82,16 +88,11 @@ export default class GameScene extends Phaser.Scene {
     console.log('Collision detected between projectile and asteroid!');
 
     projectile.destroy(); // Destroy the projectile
-    asteroid.takeDamage(); // Apply damage to the asteroid
-
-     // Optional: Add a visual effect (e.g., flash the asteroid)
-    this.tweens.add({
-      targets: asteroid,
-      alpha: 0.5,
-      duration: 100,
-      yoyo: true,
-      repeat: 1,
-    });
+    const wasDestroyed = asteroid.takeDamage(); // Apply damage to the asteroid
+    if (wasDestroyed) {
+      this.scoreSystem.addPoints(10);
+    }
+   
   }
 
   update(time: number, delta: number) {
