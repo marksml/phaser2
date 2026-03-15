@@ -15,7 +15,7 @@ export default class Projectile extends Phaser.Physics.Arcade.Sprite {
 
     // Initialize physics body
     scene.physics.add.existing(this);
-    this.body.setSize(10, 10); // Match the texture size
+    (this.body as Phaser.Physics.Arcade.Body).setSize(10, 10); // Match the texture size
 
     // Set initial velocity (will be updated when fired)
     this.setVelocity(0, 0);

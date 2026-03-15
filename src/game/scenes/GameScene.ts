@@ -3,6 +3,7 @@ import Asteroid from '../objects/Asteroid';
 import Spaceship from '../objects/Spaceship';
 import Projectile from '../objects/Projectile';
 import ScoreSystem from '../systems/ScoreSystem';
+import HealthSystem from '../systems/HealthSystem';
 
 export default class GameScene extends Phaser.Scene {
   private asteroids!: Phaser.Physics.Arcade.Group;
@@ -12,6 +13,7 @@ export default class GameScene extends Phaser.Scene {
   private spacebar!: Phaser.Input.Keyboard.Key;
   private lastFired = 0; // Add a private property to track the last firing time
   private scoreSystem!: ScoreSystem;
+  private healthSystem!: HealthSystem;
 
   constructor() {
     super('GameScene');
@@ -46,6 +48,10 @@ export default class GameScene extends Phaser.Scene {
     this.scoreSystem = new ScoreSystem(this);
     this.scoreSystem.reset();
 
+    // Initialize the health system
+    this.healthSystem = new HealthSystem(this);
+    this.healthSystem.reset();
+
     // Spawn an initial asteroid
     this.spawnAsteroid();
 
@@ -64,13 +70,16 @@ export default class GameScene extends Phaser.Scene {
     this.add.existing(this.spaceship); // Add spaceship to the scene
 
     // Create cursor keys
-    this.cursors = this.input.keyboard.createCursorKeys();
+    this.cursors = this.input.keyboard!.createCursorKeys();
 
     // Create spacebar key
-    this.spacebar = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+    this.spacebar = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
 
     // Set up collision between projectiles and asteroids
-    this.physics.add.overlap(this.projectiles, this.asteroids, this.handleProjectileAsteroidCollision, undefined, this);
+    this.physics.add.overlap(this.projectiles, this.asteroids, (p, a) => this.handleProjectileAsteroidCollision(p as Projectile, a as Asteroid), undefined, this);
+
+    // Set up collision between spaceship and asteroids
+    this.physics.add.overlap(this.spaceship, this.asteroids, (s, a) => this.handleSpaceshipAsteroidCollision(s as Spaceship, a as Asteroid), undefined, this);
   }
 
   private spawnAsteroid() {
@@ -95,7 +104,47 @@ export default class GameScene extends Phaser.Scene {
    
   }
 
-  update(time: number, delta: number) {
+  private handleSpaceshipAsteroidCollision(spaceshipObj: Spaceship, asteroidObj: Asteroid) {
+    if (!spaceshipObj.active || !asteroidObj.active) {
+      return;
+    }
+
+    const damaged = spaceshipObj.takeDamage(this);
+    if (!damaged) {
+      return; // Spaceship is invincible, ignore collision
+    }
+
+    // Explode the asteroid
+    asteroidObj.explode(asteroidObj.x, asteroidObj.y);
+    asteroidObj.disableBody(true, true);
+    this.time.delayedCall(1000, () => {
+      asteroidObj.destroy();
+    });
+
+    // Reduce health HUD
+    const remaining = this.healthSystem.takeDamage();
+
+    if (remaining === 0) {
+      spaceshipObj.explode(this);
+      this.time.delayedCall(700, () => {
+        this.scene.start('GameOverScene', { score: this.scoreSystem.getScore() });
+      });
+    }
+  }
+
+  update(_time: number, _delta: number) {
+    // Skip update if spaceship has been destroyed
+    if (!this.spaceship.active) {
+      return;
+    }
+
+    // Clean up asteroids that have passed the bottom of the screen
+    [...this.asteroids.getChildren()].forEach((asteroid) => {
+      if ((asteroid as Asteroid).y > this.scale.height + 50) {
+        asteroid.destroy();
+      }
+    });
+
     // Handle spaceship movement based on cursor keys
     if (this.cursors.left.isDown) {
       this.spaceship.setVelocityX(-300);

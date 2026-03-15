@@ -9,7 +9,7 @@ export default class Spaceship extends Phaser.Physics.Arcade.Sprite {
 
     // Initialize physics body
     scene.physics.add.existing(this);
-    this.body.setSize(50, 30); // Keep the physics body size consistent with the original texture
+    (this.body as Phaser.Physics.Arcade.Body).setSize(50, 30); // Keep the physics body size consistent with the original texture
 
     // Set initial velocity
     this.setVelocity(0, 0);
@@ -26,12 +26,59 @@ export default class Spaceship extends Phaser.Physics.Arcade.Sprite {
   }
 
   // Method to stop the spaceship
-  stop() {
+  stop(): this {
     this.setVelocityX(0);
+    return this;
   }
 
   // Method to set velocity directly
-  setVelocity(x: number, y: number) {
+  setVelocity(x: number, y: number): this {
     super.setVelocity(x, y);
+    return this;
+  }
+
+  private invincible = false;
+
+  takeDamage(scene: Phaser.Scene): boolean {
+    if (this.invincible) {
+      return false;
+    }
+    this.invincible = true;
+    const tween = scene.tweens.add({
+      targets: this,
+      alpha: 0.3,
+      duration: 100,
+      yoyo: true,
+      repeat: -1,
+    });
+    scene.time.delayedCall(1000, () => {
+      tween.stop();
+      this.setAlpha(1);
+      this.invincible = false;
+    });
+    return true;
+  }
+
+  explode(scene: Phaser.Scene): void {
+    const emitter = scene.add.particles(this.x, this.y, 'spaceship', {
+      speed: { min: 150, max: 300 },
+      angle: { min: 0, max: 360 },
+      lifespan: 400,
+      alpha: { start: 1.0, end: 0.0 },
+      scale: { start: this.scale * 0.5, end: 0 },
+      quantity: 15,
+      frequency: 0,
+      emitting: true,
+    });
+    scene.time.delayedCall(150, () => {
+      emitter.stop();
+      scene.time.delayedCall(350, () => {
+        emitter.destroy();
+      });
+    });
+    this.disableBody(true, true);
+    scene.time.delayedCall(600, () => {
+      this.destroy();
+    });
   }
 }

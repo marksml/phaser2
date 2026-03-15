@@ -34,7 +34,7 @@ export default class Asteroid extends Phaser.Physics.Arcade.Sprite {
     return false;
   }
 
-  private explode(x: number, y: number) {
+  public explode(x: number, y: number) {
     const emitter = this.scene.add.particles(x, y, 'asteroids', {
       speed: { min: 220, max: 220 },
       angle: { min: 0, max: 360 },
