@@ -3,10 +3,12 @@ import Phaser from 'phaser';
 export default class Asteroid extends Phaser.Physics.Arcade.Sprite {
   private health = 10;
   private isDying = false;
-  
-  constructor(scene: Phaser.Scene, x: number, y: number) {
+
+  constructor(scene: Phaser.Scene, x: number, y: number, health: number = 10) {
     super(scene, x, y, 'asteroids');
-    
+
+    this.health = health;
+
     const asteroidScale = Phaser.Math.Between(1, 4) / 10;
     this.setScale(asteroidScale);
 

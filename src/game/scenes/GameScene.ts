@@ -4,6 +4,7 @@ import Spaceship from '../objects/Spaceship';
 import Projectile from '../objects/Projectile';
 import ScoreSystem from '../systems/ScoreSystem';
 import HealthSystem from '../systems/HealthSystem';
+import LevelSystem from '../systems/LevelSystem';
 
 export default class GameScene extends Phaser.Scene {
   private asteroids!: Phaser.Physics.Arcade.Group;
@@ -14,6 +15,11 @@ export default class GameScene extends Phaser.Scene {
   private lastFired = 0; // Add a private property to track the last firing time
   private scoreSystem!: ScoreSystem;
   private healthSystem!: HealthSystem;
+  private levelSystem!: LevelSystem;
+  private totalScore: number = 0;
+  private spawnTimer!: Phaser.Time.TimerEvent;
+  private isTransitioning: boolean = false;
+  private survivalTimeText?: Phaser.GameObjects.Text;
 
   constructor() {
     super('GameScene');
@@ -33,6 +39,11 @@ export default class GameScene extends Phaser.Scene {
   }
 
   create() {
+    // Reset per-game state
+    this.totalScore = 0;
+    this.isTransitioning = false;
+    this.survivalTimeText = undefined;
+
     // Add the background image and scale it to fit the screen
     const background = this.add.image(0, 0, 'background').setOrigin(0, 0);
     background.displayWidth = this.cameras.main.width;
@@ -52,16 +63,26 @@ export default class GameScene extends Phaser.Scene {
     this.healthSystem = new HealthSystem(this);
     this.healthSystem.reset();
 
+    // Initialize the level system
+    this.levelSystem = new LevelSystem(this);
+
+    const currentLevel = this.levelSystem.getCurrentLevel();
+
     // Spawn an initial asteroid
     this.spawnAsteroid();
 
-    // Set up a timer to spawn asteroids every 3 seconds
-    this.time.addEvent({
-      delay: 3000,
+    // Set up a timer to spawn asteroids using the current level's interval
+    this.spawnTimer = this.time.addEvent({
+      delay: currentLevel.asteroidSpawnInterval,
       callback: this.spawnAsteroid,
       callbackScope: this,
       loop: true,
     });
+
+    // Start survival timer if this is the final level
+    if (currentLevel.survivalTime !== null) {
+      this.startSurvivalTimer(currentLevel.survivalTime);
+    }
 
     // Create the spaceship in the middle of the screen
     const screenCenterX = this.cameras.main.width / 2;
@@ -84,12 +105,13 @@ export default class GameScene extends Phaser.Scene {
 
   private spawnAsteroid() {
     const x = Phaser.Math.Between(0, this.cameras.main.width);
-    const asteroid = new Asteroid(this, x, 0);
+    const level = this.levelSystem.getCurrentLevel();
+    const asteroid = new Asteroid(this, x, 0, level.asteroidHealth);
     this.asteroids.add(asteroid); // Add to the physics group
     this.add.existing(asteroid); // Ensure the asteroid is added to the display list
 
-    // Set velocity to make the asteroid move downward
-    asteroid.setVelocityY(100); // Adjust the speed as needed
+    // Set velocity using the current level's asteroid speed
+    asteroid.setVelocityY(level.asteroidSpeed);
   }
 
   private handleProjectileAsteroidCollision(projectile: Projectile, asteroid: Asteroid) {
@@ -100,8 +122,14 @@ export default class GameScene extends Phaser.Scene {
     const wasDestroyed = asteroid.takeDamage(); // Apply damage to the asteroid
     if (wasDestroyed) {
       this.scoreSystem.addPoints(10);
+
+      if (!this.isTransitioning) {
+        const level = this.levelSystem.getCurrentLevel();
+        if (!this.levelSystem.isLastLevel() && level.scoreToAdvance !== null && this.scoreSystem.getScore() >= level.scoreToAdvance) {
+          this.startLevelTransition();
+        }
+      }
     }
-   
   }
 
   private handleSpaceshipAsteroidCollision(spaceshipObj: Spaceship, asteroidObj: Asteroid) {
@@ -130,6 +158,119 @@ export default class GameScene extends Phaser.Scene {
         this.scene.start('GameOverScene', { score: this.scoreSystem.getScore() });
       });
     }
+  }
+
+  private startLevelTransition() {
+    if (this.isTransitioning) return;
+    this.isTransitioning = true;
+
+    this.totalScore += this.scoreSystem.getScore();
+
+    // Pause physics and input
+    this.physics.pause();
+    this.input.keyboard!.enabled = false;
+
+    // Stop spawn timer
+    this.spawnTimer.remove(false);
+
+    // Clear all asteroids and projectiles
+    this.asteroids.clear(true, true);
+    this.projectiles.clear(true, true);
+
+    const { width, height } = this.cameras.main;
+    const overlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.7).setDepth(20);
+
+    const currentLevelNum = this.levelSystem.getLevelNumber();
+    const levelCompleteText = this.add
+      .text(width / 2, height / 2, `Level ${currentLevelNum} Complete!`, {
+        fontSize: '48px',
+        color: '#ffffff',
+      })
+      .setOrigin(0.5)
+      .setDepth(21);
+
+    this.time.delayedCall(1500, () => {
+      levelCompleteText.destroy();
+
+      const nextConfig = this.levelSystem.advance();
+      if (nextConfig === null) {
+        // All levels exhausted — go to victory (safety fallback)
+        overlay.destroy();
+        this.scene.start('VictoryScene', { totalScore: this.totalScore });
+        return;
+      }
+
+      const nextLevelNum = this.levelSystem.getLevelNumber();
+      const getReadyText = this.add
+        .text(width / 2, height / 2, `Level ${nextLevelNum}\nGet Ready!`, {
+          fontSize: '48px',
+          color: '#ffffff',
+          align: 'center',
+        })
+        .setOrigin(0.5)
+        .setDepth(21);
+
+      this.time.delayedCall(1500, () => {
+        getReadyText.destroy();
+        overlay.destroy();
+
+        // Reset systems for the new level
+        this.scoreSystem.reset();
+        this.healthSystem.reset();
+
+        // Recreate spawn timer with new level's interval
+        this.spawnTimer = this.time.addEvent({
+          delay: nextConfig.asteroidSpawnInterval,
+          callback: this.spawnAsteroid,
+          callbackScope: this,
+          loop: true,
+        });
+
+        // Start survival timer if the new level is the final level
+        if (nextConfig.survivalTime !== null) {
+          this.startSurvivalTimer(nextConfig.survivalTime);
+        }
+
+        // Resume physics and input
+        this.physics.resume();
+        this.input.keyboard!.enabled = true;
+        this.isTransitioning = false;
+      });
+    });
+  }
+
+  private startSurvivalTimer(duration: number) {
+    const { width } = this.cameras.main;
+    let remaining = Math.ceil(duration / 1000);
+
+    this.survivalTimeText = this.add
+      .text(width - 10, 44, `Time: ${remaining}s`, {
+        fontSize: '24px',
+        color: '#ffffff',
+      })
+      .setOrigin(1, 0)
+      .setDepth(10);
+
+    this.time.addEvent({
+      delay: 1000,
+      callback: () => {
+        remaining--;
+        if (this.survivalTimeText) {
+          this.survivalTimeText.setText(`Time: ${remaining}s`);
+        }
+      },
+      repeat: remaining - 1,
+    });
+
+    this.time.delayedCall(duration, () => {
+      if (this.survivalTimeText) {
+        this.survivalTimeText.destroy();
+        this.survivalTimeText = undefined;
+      }
+      this.scene.start('VictoryScene', {
+        totalScore: this.totalScore + this.scoreSystem.getScore(),
+      });
+    });
   }
 
   update(_time: number, _delta: number) {
@@ -204,3 +345,4 @@ export default class GameScene extends Phaser.Scene {
     }
   }
 }
+
