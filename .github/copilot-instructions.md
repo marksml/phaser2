@@ -3,38 +3,50 @@
 ## Commands
 
 ```bash
-npm run dev      # Start Vite dev server (hot reload)
-npm run build    # Type-check with tsc, then Vite production build
-npm run preview  # Serve the production build locally
+npm run dev          # Start the Vite dev server
+npm run build        # Type-check with tsc, then create a production bundle with Vite
+npm run preview      # Serve the production build locally
+npx tsc --noEmit     # Run the TypeScript checker without emitting files
 ```
 
-No test runner or linter is configured.
+There is currently **no test runner** and **no linter** configured in `package.json`, so there is no single-test command to run. `npm run build` is the main validation path. The repository also contains a `webpack.config.js`, but the active scripts build with **Vite**, not Webpack.
 
-## Architecture
+## High-level architecture
 
-**Stack:** Phaser 3 · TypeScript · Vite (ES modules, `"type": "module"`)
+**Stack:** Phaser 3 + TypeScript + Vite, using ES modules (`"type": "module"`).
 
-**Scene flow:** `BootScene` → `StartScene` → `GameScene` (loops through levels internally) → `GameOverScene` or `VictoryScene`
+**Scene flow:** `BootScene` -> `StartScene` -> `GameScene` -> `GameOverScene` or `VictoryScene`
 
-All five scenes are registered in `src/main.ts` in that order. Transitions use `this.scene.start('SceneName')`. Data is forwarded between scenes as a plain object — the receiving scene picks it up in its `init(data)` method (see `GameOverScene.init({ score })` and `VictoryScene.init({ totalScore })`).
+All scenes are registered in `src/main.ts` in that order. Scene transitions use string keys that match the class names, and score data is passed between scenes as plain objects via `this.scene.start('SceneName', data)` and picked up in `init(data)`.
 
-**Game objects** (`src/game/objects/`) extend `Phaser.Physics.Arcade.Sprite` and self-register their physics body inside the constructor via `scene.physics.add.existing(this)`. **When adding a game object to the scene you must call both** `group.add(obj)` **and** `this.add.existing(obj)` — the codebase does both explicitly everywhere (see `spawnAsteroid` and `fireProjectile` in `GameScene`).
+`BootScene` is currently just a pass-through to `StartScene`. Even though `spec.md` describes asset loading in Boot, the actual asset loading happens in `GameScene.preload()`.
 
-**Asset loading** lives entirely in `GameScene.preload()`. `BootScene` is currently a pass-through to `StartScene` with no asset loading.
+`GameScene` owns nearly all runtime orchestration:
 
-**`ScoreSystem`** (`src/game/systems/ScoreSystem.ts`) tracks score and renders HUD text in the upper-left corner.
+- it creates the asteroid and projectile physics groups
+- it creates the player ship
+- it wires collision handlers
+- it owns the firing cooldown and keyboard input loop
+- it manages level progression without changing scenes between levels
 
-**`LevelSystem`** (`src/game/systems/LevelSystem.ts`) owns the `LEVELS` config array, tracks current level index, and renders the level indicator in the upper-right corner. It exposes `getCurrentLevel()`, `advance()`, `isLastLevel()`, `getLevelNumber()`, and `reset()`.
+The gameplay loop is split across three small systems plus the scene:
 
-**`VictoryScene`** (`src/game/scenes/VictoryScene.ts`) is shown after the player completes the final level. It receives `{ totalScore }` from `GameScene` and shows a "Play Again" button that restarts at Level 1.
+- `ScoreSystem` renders the score HUD in the upper-left
+- `HealthSystem` renders the heart HUD and tracks 10-hit health
+- `LevelSystem` owns the `LEVELS` array, current level index, and the level HUD in the upper-right
 
-## Key Conventions
+Level progression is handled entirely inside `GameScene`. Completing a non-final level pauses physics/input, shows overlay text, advances `LevelSystem`, resets `ScoreSystem` and `HealthSystem`, recreates the asteroid spawn timer, and resumes play in the same scene instance. Final victory comes from either exhausting levels during transition or finishing the survival timer on the last level.
 
-- **TypeScript strict mode** is on (`strict`, `noUnusedLocals`, `noUnusedParameters`). All code must compile without errors; run `npx tsc --noEmit` to check.
-- **Scene keys** are plain string literals that match the class name (e.g., `'GameScene'`). Use these same string keys for every `this.scene.start()` / `this.scene.get()` call.
-- **Projectile texture is programmatic.** `Projectile` generates a red circle at runtime via `graphics.generateTexture('projectile', 10, 10)`, overwriting the image loaded in `preload()`. Do not replace this with a static asset load without removing the `generateTexture` call.
-- **Firing cooldown** is tracked via the `lastFired` timestamp compared against `this.time.now` (100 ms rate limit), not a Phaser timer event.
-- **Asteroid health is a constructor parameter** (default `10`). Pass `levelConfig.asteroidHealth` when spawning in `GameScene`. The `takeDamage()` method decrements it and calls `explode()` + `destroy()` at zero. The `explode()` method creates a particle emitter directly on the `Asteroid` object using the `'asteroids'` texture key.
-- **Level parameters are data-driven** via the `LEVELS` array in `LevelSystem.ts`. To add a new level, append an entry to that array — no logic changes needed.
-- **Current input is keyboard-only** (arrow keys + spacebar). The spec (`spec.md`) calls for touch/drag as the primary input — this is not yet implemented.
-- **`spec.md`** is the authoritative design document. Features like touch controls and additional polish are specified there but not yet fully implemented.
+Score handling is split intentionally: `ScoreSystem` is per-level, while `GameScene.totalScore` accumulates completed-level scores for the final victory screen. `GameOverScene` receives the current level score; `VictoryScene` receives the accumulated total score.
+
+## Key conventions
+
+- **Game objects self-register physics bodies, but not display/group membership.** `Asteroid`, `Projectile`, and `Spaceship` call `scene.physics.add.existing(this)` in their constructors. When spawning an asteroid or projectile, callers still need to add it to the right group and to the display list with both `group.add(obj)` and `this.add.existing(obj)`.
+- **Scene keys are plain string literals.** Use `'BootScene'`, `'StartScene'`, `'GameScene'`, `'GameOverScene'`, and `'VictoryScene'` consistently for `super(...)` and `this.scene.start(...)`.
+- **Current controls are keyboard-only.** The live implementation uses arrow keys for movement and spacebar for firing. `README.md` and `spec.md` describe touch controls, but that is aspirational rather than current behavior.
+- **Projectile rendering is programmatic.** `Projectile` generates a `projectile` texture at runtime with `graphics.generateTexture(...)`, overriding the preloaded projectile image key.
+- **Firing rate is enforced with timestamps, not timer events.** `GameScene` uses `lastFired` compared with `this.time.now` for a 100 ms cooldown.
+- **Level tuning is data-driven.** Asteroid spawn interval, speed, health, score thresholds, and final survival time all come from the `LEVELS` array in `LevelSystem.ts`. Add or adjust levels there before changing scene logic.
+- **The last level is identified by config shape.** `LevelSystem.isLastLevel()` checks `scoreToAdvance === null`, and the final level uses `survivalTime` instead of a score threshold.
+- **Strict TypeScript settings are enforced.** `strict`, `noUnusedLocals`, and `noUnusedParameters` are enabled, so new code needs to type-check cleanly without unused declarations.
+- **`spec.md` is the design target, not a perfect description of shipped behavior.** Use it for intended direction, but confirm implementation details in the scene and system code before changing behavior.
