@@ -26,9 +26,10 @@ export default class Asteroid extends Phaser.Physics.Arcade.Sprite {
     if (this.health <= 0) {
       this.isDying = true;
       const { x, y } = this;
+      const scene = this.scene;
       this.disableBody(true, true);
       this.explode(x, y);
-      this.scene.time.delayedCall(1000, () => {
+      scene.time.delayedCall(1000, () => {
         this.destroy();
       });
       return true;
@@ -37,7 +38,8 @@ export default class Asteroid extends Phaser.Physics.Arcade.Sprite {
   }
 
   public explode(x: number, y: number) {
-    const emitter = this.scene.add.particles(x, y, 'asteroids', {
+    const scene = this.scene;
+    const emitter = scene.add.particles(x, y, 'asteroids', {
       speed: { min: 220, max: 220 },
       angle: { min: 0, max: 360 },
       lifespan: 250,
@@ -48,9 +50,9 @@ export default class Asteroid extends Phaser.Physics.Arcade.Sprite {
       emitting: true,
     });
 
-    this.scene.time.delayedCall(100, () => {
+    scene.time.delayedCall(100, () => {
       emitter.stop();
-      this.scene.time.delayedCall(300, () => {
+      scene.time.delayedCall(300, () => {
         emitter.destroy();
       });
     });

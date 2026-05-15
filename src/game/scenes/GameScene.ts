@@ -133,7 +133,7 @@ export default class GameScene extends Phaser.Scene {
   }
 
   private handleSpaceshipAsteroidCollision(spaceshipObj: Spaceship, asteroidObj: Asteroid) {
-    if (!spaceshipObj.active || !asteroidObj.active) {
+    if (this.isTransitioning || !spaceshipObj.active || !asteroidObj.active) {
       return;
     }
 
@@ -233,6 +233,7 @@ export default class GameScene extends Phaser.Scene {
 
         // Resume physics and input
         this.physics.resume();
+        this.input.keyboard!.resetKeys();
         this.input.keyboard!.enabled = true;
         this.isTransitioning = false;
       });

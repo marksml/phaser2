@@ -10,7 +10,7 @@ export interface LevelConfig {
 }
 
 const LEVELS: LevelConfig[] = [
-  { level: 1, asteroidSpawnInterval: 2000, asteroidSpeed: 100, asteroidHealth: 10, scoreToAdvance: 100, survivalTime: null },
+  { level: 1, asteroidSpawnInterval: 2000, asteroidSpeed: 100, asteroidHealth: 10, scoreToAdvance: 50, survivalTime: null },
   { level: 2, asteroidSpawnInterval: 2000, asteroidSpeed: 150, asteroidHealth: 13, scoreToAdvance: 200, survivalTime: null },
   { level: 3, asteroidSpawnInterval: 1500, asteroidSpeed: 200, asteroidHealth: 15, scoreToAdvance: null, survivalTime: 60000 },
 ];
