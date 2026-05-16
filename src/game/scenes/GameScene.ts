@@ -4,7 +4,7 @@ import Spaceship from '../objects/Spaceship';
 import Projectile from '../objects/Projectile';
 import ScoreSystem from '../systems/ScoreSystem';
 import HealthSystem from '../systems/HealthSystem';
-import LevelSystem from '../systems/LevelSystem';
+import LevelSystem, { LEVELS } from '../systems/LevelSystem';
 
 export default class GameScene extends Phaser.Scene {
   private asteroids!: Phaser.Physics.Arcade.Group;
@@ -20,22 +20,22 @@ export default class GameScene extends Phaser.Scene {
   private spawnTimer!: Phaser.Time.TimerEvent;
   private isTransitioning: boolean = false;
   private survivalTimeText?: Phaser.GameObjects.Text;
+  private background!: Phaser.GameObjects.Image;
 
   constructor() {
     super('GameScene');
   }
 
   preload() {
-    // Load the spaceship texture
-    //this.load.image('spaceship', 'assets/spaceship.png'); // Replace with your texture path
-    this.load.image('spaceship', 'assets/spaceships/10.png'); // Replace with your texture path
+    // Load projectile texture (shared across all levels)
+    this.load.image('projectile', 'assets/explosions/images/rocket_flame/rocket_1_0000.png');
 
-    // Load the asteroid texture atlas
-    this.load.image('asteroids', 'assets/a.png'); // Replace with your texture atlas path
-
-    this.load.image('projectile', 'assets/explosions/images/rocket_flame/rocket_1_0000.png'); // Replace with your projectile texture path
-
-    this.load.image('background', 'assets/background/bg5.jpg'); // Replace with your background texture path
+    // Load per-level assets using level-indexed texture keys
+    for (const lvl of LEVELS) {
+      this.load.image(`asteroid_${lvl.level}`, lvl.asteroidAsset);
+      this.load.image(`spaceship_${lvl.level}`, lvl.spaceshipAsset);
+      this.load.image(`background_${lvl.level}`, lvl.backgroundAsset);
+    }
   }
 
   create() {
@@ -44,10 +44,13 @@ export default class GameScene extends Phaser.Scene {
     this.isTransitioning = false;
     this.survivalTimeText = undefined;
 
+    // Initialize the level system first (needed for texture keys)
+    this.levelSystem = new LevelSystem(this);
+
     // Add the background image and scale it to fit the screen
-    const background = this.add.image(0, 0, 'background').setOrigin(0, 0);
-    background.displayWidth = this.cameras.main.width;
-    background.displayHeight = this.cameras.main.height;
+    this.background = this.add.image(0, 0, this.levelSystem.getBackgroundKey()).setOrigin(0, 0);
+    this.background.displayWidth = this.cameras.main.width;
+    this.background.displayHeight = this.cameras.main.height;
 
     // Create a physics group for asteroids
     this.asteroids = this.physics.add.group();
@@ -62,9 +65,6 @@ export default class GameScene extends Phaser.Scene {
     // Initialize the health system
     this.healthSystem = new HealthSystem(this);
     this.healthSystem.reset();
-
-    // Initialize the level system
-    this.levelSystem = new LevelSystem(this);
 
     const currentLevel = this.levelSystem.getCurrentLevel();
 
@@ -87,7 +87,7 @@ export default class GameScene extends Phaser.Scene {
     // Create the spaceship in the middle of the screen
     const screenCenterX = this.cameras.main.width / 2;
     const screenCenterY = this.cameras.main.height / 2;
-    this.spaceship = new Spaceship(this, screenCenterX, screenCenterY);
+    this.spaceship = new Spaceship(this, screenCenterX, screenCenterY, this.levelSystem.getSpaceshipKey());
     this.add.existing(this.spaceship); // Add spaceship to the scene
 
     // Create cursor keys
@@ -106,7 +106,7 @@ export default class GameScene extends Phaser.Scene {
   private spawnAsteroid() {
     const x = Phaser.Math.Between(0, this.cameras.main.width);
     const level = this.levelSystem.getCurrentLevel();
-    const asteroid = new Asteroid(this, x, 0, level.asteroidHealth);
+    const asteroid = new Asteroid(this, x, 0, level.asteroidHealth, this.levelSystem.getAsteroidKey());
     this.asteroids.add(asteroid); // Add to the physics group
     this.add.existing(asteroid); // Ensure the asteroid is added to the display list
 
@@ -217,6 +217,10 @@ export default class GameScene extends Phaser.Scene {
         // Reset systems for the new level
         this.scoreSystem.reset();
         this.healthSystem.reset();
+
+        // Swap level-specific textures
+        this.background.setTexture(this.levelSystem.getBackgroundKey());
+        this.spaceship.setTexture(this.levelSystem.getSpaceshipKey());
 
         // Recreate spawn timer with new level's interval
         this.spawnTimer = this.time.addEvent({

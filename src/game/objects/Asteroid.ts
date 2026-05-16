@@ -4,8 +4,8 @@ export default class Asteroid extends Phaser.Physics.Arcade.Sprite {
   private health = 10;
   private isDying = false;
 
-  constructor(scene: Phaser.Scene, x: number, y: number, health: number = 10) {
-    super(scene, x, y, 'asteroids');
+  constructor(scene: Phaser.Scene, x: number, y: number, health: number = 10, textureKey: string = 'asteroids') {
+    super(scene, x, y, textureKey);
 
     this.health = health;
 
@@ -39,7 +39,7 @@ export default class Asteroid extends Phaser.Physics.Arcade.Sprite {
 
   public explode(x: number, y: number) {
     const scene = this.scene;
-    const emitter = scene.add.particles(x, y, 'asteroids', {
+    const emitter = scene.add.particles(x, y, this.texture.key, {
       speed: { min: 220, max: 220 },
       angle: { min: 0, max: 360 },
       lifespan: 250,

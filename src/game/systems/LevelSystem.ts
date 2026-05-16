@@ -7,12 +7,24 @@ export interface LevelConfig {
   asteroidHealth: number;
   scoreToAdvance: number | null;
   survivalTime: number | null;
+  asteroidAsset: string;
+  spaceshipAsset: string;
+  backgroundAsset: string;
 }
 
-const LEVELS: LevelConfig[] = [
-  { level: 1, asteroidSpawnInterval: 2000, asteroidSpeed: 100, asteroidHealth: 10, scoreToAdvance: 100, survivalTime: null },
-  { level: 2, asteroidSpawnInterval: 2000, asteroidSpeed: 150, asteroidHealth: 13, scoreToAdvance: 200, survivalTime: null },
-  { level: 3, asteroidSpawnInterval: 1500, asteroidSpeed: 200, asteroidHealth: 15, scoreToAdvance: null, survivalTime: 60000 },
+export const LEVELS: LevelConfig[] = [
+  {
+    level: 1, asteroidSpawnInterval: 2000, asteroidSpeed: 100, asteroidHealth: 10, scoreToAdvance: 100, survivalTime: null,
+    asteroidAsset: 'assets/rocks/a.png', spaceshipAsset: 'assets/spaceships/spaceship_Level_1.png', backgroundAsset: 'assets/background/background_Level_1.jpg',
+  },
+  {
+    level: 2, asteroidSpawnInterval: 2000, asteroidSpeed: 150, asteroidHealth: 13, scoreToAdvance: 200, survivalTime: null,
+    asteroidAsset: 'assets/rocks/b.png', spaceshipAsset: 'assets/spaceships/spaceship_Level_2.png', backgroundAsset: 'assets/background/background_Level_2.jpg',
+  },
+  {
+    level: 3, asteroidSpawnInterval: 1500, asteroidSpeed: 200, asteroidHealth: 15, scoreToAdvance: null, survivalTime: 60000,
+    asteroidAsset: 'assets/rocks/c.png', spaceshipAsset: 'assets/spaceships/spaceship_Level_3.png', backgroundAsset: 'assets/background/background_Level_3.jpg',
+  },
 ];
 
 export default class LevelSystem {
@@ -31,6 +43,18 @@ export default class LevelSystem {
 
   getCurrentLevel(): LevelConfig {
     return LEVELS[this.currentLevelIndex];
+  }
+
+  getAsteroidKey(): string {
+    return `asteroid_${this.currentLevelIndex + 1}`;
+  }
+
+  getSpaceshipKey(): string {
+    return `spaceship_${this.currentLevelIndex + 1}`;
+  }
+
+  getBackgroundKey(): string {
+    return `background_${this.currentLevelIndex + 1}`;
   }
 
   advance(): LevelConfig | null {

@@ -1,8 +1,8 @@
 import Phaser from 'phaser';
 
 export default class Spaceship extends Phaser.Physics.Arcade.Sprite {
-  constructor(scene: Phaser.Scene, x: number, y: number) {
-    super(scene, x, y, 'spaceship'); // Use the loaded texture key
+  constructor(scene: Phaser.Scene, x: number, y: number, textureKey: string = 'spaceship') {
+    super(scene, x, y, textureKey); // Use the loaded texture key
 
     // Scale the texture to half size
     this.setScale(0.7);
@@ -60,7 +60,7 @@ export default class Spaceship extends Phaser.Physics.Arcade.Sprite {
   }
 
   explode(scene: Phaser.Scene): void {
-    const emitter = scene.add.particles(this.x, this.y, 'spaceship', {
+    const emitter = scene.add.particles(this.x, this.y, this.texture.key, {
       speed: { min: 150, max: 300 },
       angle: { min: 0, max: 360 },
       lifespan: 400,
