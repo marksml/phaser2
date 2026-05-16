@@ -321,8 +321,15 @@ export default class GameScene extends Phaser.Scene {
     // Game loop code will go here
   }
 
-  private fireProjectile() {
-    // Add a cooldown to control firing rate
+  /** Test-only: instantly drain health to zero and transition to GameOverScene. */
+  public forceGameOver(): void {
+    if (this.isTransitioning) return;
+    this.isTransitioning = true;
+    this.healthSystem.drainAll();
+    this.scene.start('GameOverScene', { score: this.scoreSystem.getScore() });
+  }
+
+  private fireProjectile() {    // Add a cooldown to control firing rate
     const firingRate = 100; // milliseconds
     if (this.time.now > this.lastFired + firingRate) {
       

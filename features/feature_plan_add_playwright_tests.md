@@ -2,7 +2,7 @@
 
 ## Problem
 
-The repository has no automated test runner today. It is a Phaser 3 + TypeScript + Vite browser game with scene-driven flow (`BootScene` -> `StartScene` -> `GameScene` -> `GameOverScene` / `VictoryScene`), and the current implementation is keyboard-driven even though the spec and README describe touch controls. Adding Playwright test coverage needs both a browser-test setup and a way to make Phaser gameplay assertions reliable instead of timing-sensitive.
+The repository has no automated test runner today. It is a Phaser 3 + TypeScript + Vite browser game with scene-driven flow (`BootScene` -> `StartScene` -> `GameScene` -> `GameOverScene` / `VictoryScene`), and the current implementation is keyboard-driven. Adding Playwright test coverage needs both a browser-test setup and a way to make Phaser gameplay assertions reliable instead of timing-sensitive.
 
 ## Current state
 
@@ -86,8 +86,8 @@ These are **not part of the initial smoke-only implementation**.
 ## Notes and considerations
 
 - Because UI is canvas-based, prefer page-evaluated Phaser state over screenshot assertions for core flow tests.
-- The current repo has a Playwright MCP server configured for VS Code, but that is separate from adding Playwright as a project test dependency.
-- The README/spec currently describe touch behavior that the implementation does not yet provide; the first test plan should target actual shipped keyboard-based behavior unless the scope explicitly includes implementing touch controls first.
+- The current repo has a Playwright MCP server configured for VS Code, but that is separate from adding Playwright as a project test dependency. So please add playwright as a test dependeny in addition.
+- The first test plan should target the keyboard-based behavior.
 - A good first milestone is a small, deterministic smoke suite rather than broad gameplay coverage.
 
 ## Draft todos

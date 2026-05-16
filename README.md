@@ -4,7 +4,7 @@ Ein 2D-Arcade-Browsergame entwickelt mit Phaser 3, TypeScript und Vite. Optimier
 
 ## Features
 
-- Touch-basierte Steuerung des Raumschiffs
+- Keyboard-basierte Steuerung des Raumschiffs
 - Asteroiden ausweichen und abschießen
 - Punkte-System
 - Schwierigkeitssteigerung über Zeit
@@ -34,6 +34,16 @@ Erstelle das Projekt für die Produktion:
 
 ```bash
 npm run build
+```
+
+## Tests
+
+E2E-Smoke-Tests mit Playwright (der Vite-Dev-Server startet automatisch):
+
+```bash
+npm test                  # headless (für CI)
+npm run test:headed       # headed – Browser sichtbar
+npm run test:debug        # Schritt-für-Schritt-Debugger
 ```
 
 ## Deployment

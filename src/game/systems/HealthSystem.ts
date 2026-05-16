@@ -36,4 +36,11 @@ export default class HealthSystem {
   getHealth(): number {
     return this.health;
   }
+
+  /** Test-only: drain all health to zero and update HUD. */
+  drainAll(): void {
+    while (this.health > 0) {
+      this.takeDamage();
+    }
+  }
 }
